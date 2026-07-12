@@ -7,60 +7,69 @@ app.get("/", (req, res) => {
   res.send("Rocket League API läuft!");
 });
 
-let browser;
-
-async function getBrowser() {
-  if (!browser) {
-    browser = await chromium.launch({
-      headless: true
-    });
-  }
-  return browser;
-}
-
 
 app.get("/rocketleague/:platform/:name", async (req, res) => {
 
   const platform = req.params.platform;
   const name = req.params.name;
 
+  let browser;
+
   try {
 
-    const browser = await getBrowser();
+    browser = await chromium.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox"
+      ]
+    });
+
     const page = await browser.newPage();
 
     const url =
     `https://rocketleague.tracker.network/rocket-league/profile/${platform}/${name}/overview`;
 
     await page.goto(url, {
-      waitUntil: "networkidle",
-      timeout: 30000
+      waitUntil: "domcontentloaded",
+      timeout: 60000
     });
 
 
-    const text = await page.locator("body").innerText();
+    await page.waitForTimeout(5000);
+
+
+    const body = await page.locator("body").innerText();
 
 
     let rank = "Rank nicht gefunden";
 
 
-    if(text.includes("Diamond III")){
+    if(body.includes("Diamond III")) {
       rank = "Diamond III";
     }
 
-    if(text.includes("Champion I")){
+
+    if(body.includes("Champion I")) {
       rank = "Champion I";
     }
 
-    await page.close();
+
+    await browser.close();
+
 
     res.send(rank);
 
 
-  } catch(err){
+  } catch(error) {
 
-    console.log(err);
-    res.send("Fehler beim Abrufen");
+    console.log(error);
+
+    if(browser) {
+      await browser.close();
+    }
+
+    res.send("Fehler beim Abrufen: " + error.message);
 
   }
 
@@ -68,5 +77,5 @@ app.get("/rocketleague/:platform/:name", async (req, res) => {
 
 
 app.listen(process.env.PORT || 3000, () => {
- console.log("Rocket League API läuft");
+  console.log("Rocket League API läuft");
 });
