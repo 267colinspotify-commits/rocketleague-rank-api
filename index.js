@@ -41,8 +41,10 @@ app.get("/rocketleague/:platform/:name", async (req, res) => {
 
     const body = await page.locator("body").innerText();
 
+console.log(body);
 
-    let rank = "Rank nicht gefunden";
+
+    let rank = body;
 
 
     if(body.includes("Diamond III")) {
