@@ -3,6 +3,10 @@ const { chromium } = require("playwright");
 
 const app = express();
 
+app.get("/", (req, res) => {
+  res.send("Rocket League API läuft!");
+});
+
 let browser;
 
 async function getBrowser() {
