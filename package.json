@@ -1,8 +1,10 @@
 {
   "name": "rocketleague-rank-api",
   "version": "1.0.0",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "postinstall": "npx playwright install chromium"
   },
   "dependencies": {
     "express": "^4.21.2",
