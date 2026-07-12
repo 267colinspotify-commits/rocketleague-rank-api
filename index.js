@@ -1,49 +1,68 @@
 const express = require("express");
-const axios = require("axios");
-const cheerio = require("cheerio");
+const { chromium } = require("playwright");
 
 const app = express();
 
+let browser;
+
+async function getBrowser() {
+  if (!browser) {
+    browser = await chromium.launch({
+      headless: true
+    });
+  }
+  return browser;
+}
+
+
 app.get("/rocketleague/:platform/:name", async (req, res) => {
 
-    const player = req.params.name;
-    const platform = req.params.platform;
+  const platform = req.params.platform;
+  const name = req.params.name;
 
-    try {
+  try {
 
-        const url =
-        `https://rocketleague.tracker.network/rocket-league/profile/${platform}/${player}/overview`;
+    const browser = await getBrowser();
+    const page = await browser.newPage();
 
-        const response = await axios.get(url, {
-            headers: {
-                "User-Agent": "Mozilla/5.0"
-            }
-        });
+    const url =
+    `https://rocketleague.tracker.network/rocket-league/profile/${platform}/${name}/overview`;
 
-        const $ = cheerio.load(response.data);
+    await page.goto(url, {
+      waitUntil: "networkidle",
+      timeout: 30000
+    });
 
-        let rank = "kein Rang gefunden";
 
-        $(".rank-title").each((i, el) => {
-            const text = $(el).text().trim();
+    const text = await page.locator("body").innerText();
 
-            if(text) {
-                rank = text;
-            }
-        });
 
-        res.send(rank);
+    let rank = "Rank nicht gefunden";
 
-    } catch(error) {
 
-        console.log(error);
-        res.send("Fehler");
-
+    if(text.includes("Diamond III")){
+      rank = "Diamond III";
     }
+
+    if(text.includes("Champion I")){
+      rank = "Champion I";
+    }
+
+    await page.close();
+
+    res.send(rank);
+
+
+  } catch(err){
+
+    console.log(err);
+    res.send("Fehler beim Abrufen");
+
+  }
 
 });
 
 
 app.listen(process.env.PORT || 3000, () => {
-    console.log("Server läuft");
+ console.log("Rocket League API läuft");
 });
